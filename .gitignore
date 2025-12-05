@@ -1,0 +1,34 @@
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Cache
+.cache/
+*fb_cookies.json
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+.logs/
+*.log
+
+# Dependencies
+venv/
+env/
+node_modules/
+
+# Artifacts
+build/
+dist/
