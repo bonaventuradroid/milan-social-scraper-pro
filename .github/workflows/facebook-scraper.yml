@@ -1,0 +1,60 @@
+name: 🔄 Facebook Groups Smart Scraper
+
+on:
+  schedule:
+    - cron: '0 6 * * *'  # 6 AM CET
+    - cron: '0 14 * * *'  # 2 PM CET
+    - cron: '0 22 * * *'  # 10 PM CET
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Cache pip packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install playwright requests python-dotenv pydantic
+          playwright install chromium
+      
+      - name: Run Facebook Scraper
+        env:
+          FB_EMAIL: ${{ secrets.FB_EMAIL }}
+          FB_PASSWORD: ${{ secrets.FB_PASSWORD }}
+          FB_GROUPS: ${{ secrets.FB_GROUPS }}
+          N8N_WEBHOOK: ${{ secrets.N8N_WEBHOOK }}
+          CLOUDFLARE_PROXY: ${{ secrets.CLOUDFLARE_PROXY }}
+        run: python scrapers/facebook_groups.py
+      
+      - name: Notify Success via Telegram
+        if: success()
+        run: |
+          curl -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+          -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+          -d text="✅ Facebook scraper completed successfully" || true
+      
+      - name: Notify Failure via Telegram
+        if: failure()
+        run: |
+          curl -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+          -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+          -d text="❌ Facebook scraper failed. Check logs." || true
